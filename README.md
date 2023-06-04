@@ -6,4 +6,4 @@ This bot requires you to put in the token and the channel id you want to have it
 
 
 ⚠THIS IS VERY IMPORTANT TO RUN THE SCRIPT⚠
-Remember to fill out 'YOUR_BOT_TOKEN' and 'TARGET_CHANNEL_ID' with the channel id and bot token and remember to download python then open a new command prompt and do pip install discord because the discord module is VERY important to make this script run
+Remember to fill out 'YOUR_BOT_TOKEN' and 'TARGET_CHANNEL_ID' with the channel id and bot token and remember to download python then open a new command prompt and do pip install discord because the discord module is VERY important to make this script run also pip install nextcord its important too
