@@ -1,58 +1,59 @@
-import discord
+import nextcord
 import random
 import asyncio
 
 bot_token = 'YOUR_BOT_TOKEN'
-target_channel_id = 'TARGET_CHANNEL_ID'
+target_guild_id = TARGET_GUILD_ID
+target_channel_id = TARGET_CHANNEL_ID
+answer_prefix = '!'
 
-# Create a Discord client
-intents = discord.Intents.default()
-intents.typing = False
-intents.presences = False
-client = discord.Client(intents=intents)
+intents = nextcord.Intents.default()
+intents.message_content = True
 
-# Generate a random math problem
-def generate_math_problem():
-    a = random.randint(1, 10)
-    b = random.randint(1, 10)
-    operator = random.choice(['+', '-', '*', '/'])
-    problem = f"What is {a} {operator} {b}?"
-    return problem, eval(f"{a}{operator}{b}")
+client = nextcord.Client(intents=intents)
 
-# Send the math problem to the specified channel
-async def send_math_problem(channel):
-    problem, answer = generate_math_problem()
-    await channel.send("Math problem sent to chat:")
-    await channel.send(problem)
-
-    # Wait for 20 seconds for an answer
-    await asyncio.sleep(20)
-
-    # Check for answers
-    async for message in channel.history(limit=10):
-        if message.author.bot:
-            continue
-        content = message.content.strip()
-        if content.startswith("&answer"):
-            user_answer = content.split(" ", 1)[1]
-            if user_answer.isdigit() and int(user_answer) == answer:
-                await channel.send("The answer is:")
-                await channel.send(str(answer))
-            else:
-                await channel.send("Sorry, that's incorrect.")
-
-# Event triggered when the bot is ready
 @client.event
 async def on_ready():
     print('Bot is ready.')
+    target_guild = nextcord.utils.get(client.guilds, id=target_guild_id)
+    if target_guild is None:
+        print('Target guild not found.')
+        return
+    target_channel = nextcord.utils.get(target_guild.channels, id=target_channel_id)
+    if target_channel is None:
+        print('Target channel not found.')
+        return
+    print(f'Target channel found: {target_channel.name}')
+    math_problem = generate_math_problem()
+    await target_channel.send(f"Math problem: {math_problem}\nTo answer, use the prefix '{answer_prefix}' followed by your answer.")
+    print("Math problem sent to chat.")
+    await asyncio.sleep(30)  # Wait for 30 seconds
+    await check_answers(target_channel, math_problem)
 
-    # Find the target channel
-    target_channel = client.get_channel(target_channel_id)
+@client.event
+async def on_message(message):
+    if message.author == client.user:
+        return
+    if message.content.startswith(answer_prefix):
+        answer = message.content[len(answer_prefix):].strip()
+        username = message.author.name
+        await message.channel.send(f"{username} answered: {answer}")
+        print(f"Answer received: {username} - {answer}")
+        await asyncio.sleep(2)  # Wait for 2 seconds to avoid rate limiting
+        await check_answers(message.channel, answer)
 
-    if target_channel:
-        await send_math_problem(target_channel)
-    else:
-        print(f"Target channel ({target_channel_id}) not found.")
+def generate_math_problem():
+    num1 = random.randint(1, 10)
+    num2 = random.randint(1, 10)
+    operator = random.choice(['+', '-', '*', '/'])
+    return f"{num1} {operator} {num2}"
 
-# Run the bot
+async def check_answers(channel, problem):
+    correct_answers = []
+    async for message in channel.history(limit=100):
+        if message.content.startswith(answer_prefix) and message.content[len(answer_prefix):].strip() == problem:
+            correct_answers.append(message.author.name)
+    if correct_answers:
+        await channel.send(f"The correct answer was: {problem}\nCorrect answers from: {', '.join(correct_answers)}")
+
 client.run(bot_token)
